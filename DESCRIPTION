@@ -15,6 +15,7 @@ Imports:
     doBy,
     doSNOW,
     foreach,
+    ggplot2,
     graphics,
     grDevices,
     grid,
@@ -25,6 +26,7 @@ Imports:
     latticeExtra,
     pander,
     PBSmodelling,
+    purrr,
     rmarkdown,
     stats,
     utils
