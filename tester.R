@@ -1,59 +1,35 @@
+library(here)
+if (getwd() != here("assessment")){
+  setwd("assessment")
+  
+}
 library(jjmR)
-library(tidyverse)
-library(reshape2)
+# mod0.00 <- runit(geth("0.00"),pdf=TRUE,portrait=F,est=TRUE,exec="../src/jjms")
+mod0.00 <- readJJM("h2_0.00", path = "config", input = "input")
 
-# setwd("assessment") # Make sure to keep the quotation marks!
+# mod_prev <- readJJM(geth("1.00"), path = "config", input = "input")
+# save(mod_prev, file="results/mod_prev_h1.Rdat")
 
-h1.mod <- jjmR::readJJM("h2_0.02", path = "config", input = "input")
+load("results/mod_prev_h1.Rdat")
 
-kobe(h1.mod, engine = "ggplot", col = "black", Bref = 1, Fref = 1)
-
-
-oldnewMods <- combineModels(h1.mod)
+old_vs_new_mods <- combineModels(mod0.00,mod_prev)
 
 
-z <- oldnewMods$h2_0.02$output
+selectivities <- get_selectivities(old_vs_new_mods)
 
 
-
-selectivities <- get_selectivities(h1.mod)
-
+plot_selectivities(selectivities)
 
 
-plot(oldnewMods,combine=T,what="selectivity",stack=F,fleet="all")
-
-plot(oldnewMods,combine=T,what="recruitment",stack=F,main="Recruitment")
-
-plot(oldnewMods,combine=T,what="ftot",stack=F,main="Total Fishing Mortality")
+plot(old_vs_new_mods,what="selectivity",fleet="fsh", alpha = 0.2, scale = 10,
+     years = 2000:2020)
 
 
-fishery_length <- melt(data$Flengthcomp) %>% 
-  as_tibble() %>% 
-  rename(fleet = Var3,
-         count = value,
-         year = years)
-# year, length, fleets
-# 
+plot(mod0.00,what="selectivity",fleet="ind", alpha = 0.2, scale = 10,
+     years = 2000:2020)
 
+a = get_msy_mt(old_vs_new_mods)
 
-fishery_length %>% 
-  group_by(year) %>% 
-  summarise(seen = sum(!is.na(count))) %>% 
-  View()
-  
+kobe(mod0.00, engine = "ggplot")
 
-tidy_fishery_length <- fishery_length %>% 
-  filter(!is.na(count)) %>% 
-  group_by(year, fleet) %>% 
-  mutate(count = count / sum(count))
-  
-
-lines <- data.frame(x = c(18,23, 4, 15), source =  c("chile","chile", "peru","peru"), age = factor(c(0,1,0,1)))
-
-tidy_fishery_length %>% 
-  ggplot(aes(lengths, count, fill = year, group = year)) + 
-  geom_density(stat = "identity", alpha = 0.5) + 
-  geom_vline(data = lines, aes(xintercept = x, color = source, linetype = age), size = 2) +
-  scale_fill_viridis_c() + 
-  scale_color_manual(name = "Growth Model",values = c("red","blue")) +
-  labs(caption = c("mean length"))
+kobe(old_vs_new_mods, engine = "ggplot")

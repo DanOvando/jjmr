@@ -31,83 +31,76 @@ kobe = function(obj,
                 ylim = NULL,
                 engine = "ggplot",
                 ...) {
-  for (i in seq_along(obj)) {
-    object = obj[[i]]
+  if (engine == "ggplot") {
     
-    if (engine == "ggplot") {
-      flatten_stocks <- function(x) {
-        flat_msy_mt <-
-          (purrr::map_df(x$output, function(z)
-            as.data.frame(z$msy_mt), .id = "stock"))
-        
-      }
-      
-      msy_mt_results <-
-        purrr::map_df(obj, flatten_stocks, .id = "model")
-      
-      
-      quadrants <-  data.frame(
-        panel = c("bottom_left", "top_right",
-                  "bottom_right", "top_left"),
-        fill = c(
-          rgb(1, 1, 0, alpha = 0.5),
-          rgb(1, 1, 0, alpha = 0.5),
-          rgb(0, 1, 0, alpha = 0.5),
-          rgb(1, 0, 0, alpha = 0.5)
+    msy_mt_results <- get_msy_mt(obj)
+    
+    
+    quadrants <-  data.frame(
+      panel = c("bottom_left", "top_right",
+                "bottom_right", "top_left"),
+      fill = c(
+        rgb(1, 1, 0, alpha = 0.5),
+        rgb(1, 1, 0, alpha = 0.5),
+        rgb(0, 1, 0, alpha = 0.5),
+        rgb(1, 0, 0, alpha = 0.5)
+      ),
+      xmin = c(-Inf, Bref, Bref,-Inf),
+      xmax = c(Bref, Inf, Inf, Bref),
+      ymin = c(-Inf, Fref,-Inf, Fref),
+      ymax = c(Fref, Inf, Fref, Inf)
+    )
+    
+    quadrants <-
+      tidyr::expand_grid(
+        model = unique(msy_mt_results$model),
+        stock = unique(msy_mt_results$stock),
+        things = quadrants
+      ) %>%
+      tidyr::unnest(cols = things)
+    
+    kobe_plot <- msy_mt_results %>%
+      ggplot() +
+      ggplot2::geom_rect(
+        data = quadrants,
+        aes(
+          xmin = xmin,
+          ymin = ymin,
+          xmax = xmax,
+          ymax = ymax,
+          group = fill
         ),
-        xmin = c(-Inf, Bref, Bref, -Inf),
-        xmax = c(Bref, Inf, Inf, Bref),
-        ymin = c(-Inf, Fref, -Inf, Fref),
-        ymax = c(Fref, Inf, Fref, Inf)
-      )
+        fill = quadrants$fill
+      ) +
+      ggplot2::geom_hline(aes(yintercept = Fref), linetype = 2) +
+      ggplot2::geom_vline(aes(xintercept = Bref), linetype = 2) +
+      ggplot2::geom_path(aes(b_bmsy, f_fmsy), color = "darkgrey") +
+      ggplot2::geom_point(aes(b_bmsy, f_fmsy), size = 3, color = col) +
+      ggplot2::scale_x_continuous(
+        name = bquote(B / B[MSY]),
+        breaks = seq(0, max(2, 1.1 * max(
+          msy_mt_results$b_bmsy
+        )), by = 0.5),
+        limits = c(0, NA),
+        expand = ggplot2::expansion(mult = c(0, .1))
+      ) +
+      ggplot2::scale_y_continuous(
+        name = bquote(F / F[MSY]),
+        breaks = seq(0, max(2, 1.1 * max(
+          msy_mt_results$f_fmsy
+        )), by = 0.5),
+        limits = c(0, NA),
+        expand = ggplot2::expansion(mult = c(0, .1))
+      ) +
+      ggplot2::facet_grid(model ~ stock) +
+      theme_jjm()
+    
+    
+    return(kobe_plot)
+  } else if (engine == "lattice") {
+    for (i in seq_along(obj)) {
+      object = obj[[i]]
       
-      quadrants <-
-        tidyr::expand_grid(
-          model = unique(msy_mt_results$model),
-          stock = unique(msy_mt_results$stock),
-          things = quadrants
-        ) %>%
-        tidyr::unnest(cols = things)
-      
-      kobe_plot <- msy_mt_results %>%
-        ggplot() +
-        ggplot2::geom_rect(
-          data = quadrants,
-          aes(
-            xmin = xmin,
-            ymin = ymin,
-            xmax = xmax,
-            ymax = ymax,
-            group = fill
-          ),
-          fill = quadrants$fill
-        ) +
-        ggplot2::geom_hline(aes(yintercept = Fref), linetype = 2) +
-        ggplot2::geom_vline(aes(xintercept = Bref), linetype = 2) +
-        ggplot2::geom_path(aes(b_bmsy, f_fmsy), color = "darkgrey") +
-        ggplot2::geom_point(aes(b_bmsy, f_fmsy), size = 3, color = col) +
-        ggplot2::scale_x_continuous(
-          name = bquote(B / B[MSY]),
-          breaks = seq(0, max(2, 1.1 * max(
-            msy_mt_results$b_bmsy
-          )), by = 0.5),
-          limits = c(0, NA),
-          expand = ggplot2::expansion(mult = c(0, .1))
-        ) +
-        ggplot2::scale_y_continuous(
-          name = bquote(F / F[MSY]),
-          breaks = seq(0, max(2, 1.1 * max(
-            msy_mt_results$f_fmsy
-          )), by = 0.5),
-          limits = c(0, NA),
-          expand = ggplot2::expansion(mult = c(0, .1))
-        ) +
-        ggplot2::facet_grid(model ~ stock) +
-        theme_jjm()
-      
-      
-      return(kobe_plot)
-    } else if (engine == "lattice") {
       kobe_plot <- .kobe1(
         x = object,
         stock = stock,
@@ -123,7 +116,7 @@ kobe = function(obj,
       )
       
       return(invisible())
-    }
+    } # close for loop
     
     
   }

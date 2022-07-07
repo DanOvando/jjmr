@@ -7,44 +7,73 @@
 #' @export
 #'
 #' @examples
-#' 
+#'
 #' \dontrun{
-#' 
+#'
 #' oldnewMods <- combineModels(mod0.00,mod_prev)
 #'selectivities <- get_selectivities(oldnewMods)
 #'plot_selectivities(selectivities)
-#' 
+#'
 #' }
-#' 
-plot_selectivities <- function(sels, fleet = "fsh") {
-  if (fleet == "all") {
-    fleet <- unique(sels$fleet_type)
+#'
+plot_selectivities <-
+  function(sels,
+           fleet = "fsh",
+           alpha = 0.4,
+           scale = 4,
+           size = 0.5,
+           years = "all") {
+    if (fleet == "all") {
+      fleet <- unique(sels$fleet_type)
+    }
+    if (all(years == "all")){
+      years <- unique(sels$year)
+    }
+    
+    sels <- sels %>%
+      dplyr::filter(fleet_type %in% fleet,
+                    year %in% years)
+    
+    if (nrow(sels) == 0) {
+      stop(
+        "Specified fleet for plotting not in list of available fleets. Must be one of 'fsh','ind', or 'all'"
+      )
+    }
+    
+    tmp <- sels %>%
+      ggplot() +
+      ggridges::geom_density_ridges(
+        aes(
+          x = age,
+          y = year,
+          height = selectivity,
+          group = interaction(model, year),
+          fill = model,
+          color = model
+        ),
+        stat = "identity",
+        alpha = alpha,
+        scale = scale,
+        size = size
+      ) +
+      theme_jjm() +
+      ggplot2::scale_x_continuous(name = "Age", guide = ggplot2::guide_axis(check.overlap = TRUE, n.dodge = 2)) +
+      ggplot2::scale_y_continuous(name = "Year") +
+      ggplot2::scale_color_viridis_d(name = "Model") +
+      ggplot2::scale_fill_viridis_d(name = "Model")
+    
+    if (dplyr::n_distinct(sels$fleet_type) == 1){
+      
+      out <- tmp + 
+        ggplot2::facet_wrap(~fleet_number, labeller = ggplot2::label_both)
+      
+    } else {
+      out <- tmp + 
+        ggplot2::facet_grid(fleet_type ~ fleet_number, labeller = ggplot2::label_both)
+        
+    }
+    
+    return(out)
+    
+    
   }
-  
-  sels <- sels %>%
-    dplyr::filter(fleet_type %in% fleet)
-  
-  if (nrow(sels) == 0){
-    stop("Specified fleet for plotting not in list of available fleets. Must be one of 'fsh','ind', or 'all'")
-  }
-    sels %>% 
-    ggplot() +
-    ggridges::geom_density_ridges(
-      aes(
-        x = age,
-        y = year,
-        height = selectivity,
-        group = interaction(model, year),
-        fill = model
-      ),
-      stat = "identity",
-      color = "transparent",
-      alpha = 0.4,
-      scale = 4
-    ) +
-    ggplot2::facet_grid(fleet_type ~ fleet_number, labeller = ggplot2::label_both) + 
-    theme_jjm() + 
-    ggplot2::scale_x_continuous(name = "Age") + 
-    ggplot2::scale_y_continuous(name = "Year")
-  
-}
