@@ -2,7 +2,7 @@
 #'
 #' @param ...
 #'
-#' @return
+#' @return a ggplot2 theme object
 #' @export
 #' @importFrom ggplot2 %+replace%
 #' 

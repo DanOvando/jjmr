@@ -18,6 +18,7 @@
 #' kobe(model)
 #' }
 #' @export
+#'
 kobe = function(obj,
                 add = FALSE,
                 col = "black",
@@ -30,18 +31,10 @@ kobe = function(obj,
                 ylim = NULL,
                 engine = "ggplot",
                 ...) {
-  
-
   for (i in seq_along(obj)) {
     object = obj[[i]]
     
     if (engine == "ggplot") {
-      
-      #' flatten msy_mt object across stocks
-      #'
-      #' @param x a model run
-      #'
-      #' @return flattened msy_mt
       flatten_stocks <- function(x) {
         flat_msy_mt <-
           (purrr::map_df(x$output, function(z)
@@ -49,7 +42,8 @@ kobe = function(obj,
         
       }
       
-      msy_mt_results <- purrr::map_df(obj,flatten_stocks, .id = "model")
+      msy_mt_results <-
+        purrr::map_df(obj, flatten_stocks, .id = "model")
       
       
       quadrants <-  data.frame(
@@ -61,12 +55,19 @@ kobe = function(obj,
           rgb(0, 1, 0, alpha = 0.5),
           rgb(1, 0, 0, alpha = 0.5)
         ),
-        xmin = c(-Inf, Bref, Bref,-Inf),
+        xmin = c(-Inf, Bref, Bref, -Inf),
         xmax = c(Bref, Inf, Inf, Bref),
-        ymin = c(-Inf, Fref,-Inf, Fref),
+        ymin = c(-Inf, Fref, -Inf, Fref),
         ymax = c(Fref, Inf, Fref, Inf)
       )
- 
+      
+      quadrants <-
+        tidyr::expand_grid(
+          model = unique(msy_mt_results$model),
+          stock = unique(msy_mt_results$stock),
+          things = quadrants
+        ) %>%
+        tidyr::unnest(cols = things)
       
       kobe_plot <- msy_mt_results %>%
         ggplot() +
@@ -83,21 +84,25 @@ kobe = function(obj,
         ) +
         ggplot2::geom_hline(aes(yintercept = Fref), linetype = 2) +
         ggplot2::geom_vline(aes(xintercept = Bref), linetype = 2) +
-        ggplot2::geom_path(aes(b_bmsy, f_fmsy),color = "darkgrey") +
-        ggplot2::geom_point(aes(b_bmsy, f_fmsy),size = 3, color = col) +
+        ggplot2::geom_path(aes(b_bmsy, f_fmsy), color = "darkgrey") +
+        ggplot2::geom_point(aes(b_bmsy, f_fmsy), size = 3, color = col) +
         ggplot2::scale_x_continuous(
           name = bquote(B / B[MSY]),
-          breaks = seq(0,max(2,1.1* max(msy_mt_results$b_bmsy)), by = 0.5),
+          breaks = seq(0, max(2, 1.1 * max(
+            msy_mt_results$b_bmsy
+          )), by = 0.5),
           limits = c(0, NA),
           expand = ggplot2::expansion(mult = c(0, .1))
         ) +
         ggplot2::scale_y_continuous(
           name = bquote(F / F[MSY]),
-          breaks = seq(0,max(2,1.1 * max(msy_mt_results$f_fmsy)), by = 0.5),
+          breaks = seq(0, max(2, 1.1 * max(
+            msy_mt_results$f_fmsy
+          )), by = 0.5),
           limits = c(0, NA),
           expand = ggplot2::expansion(mult = c(0, .1))
-        ) + 
-        ggplot2::facet_grid(model ~ stock) + 
+        ) +
+        ggplot2::facet_grid(model ~ stock) +
         theme_jjm()
       
       
