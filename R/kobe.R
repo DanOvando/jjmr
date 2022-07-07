@@ -214,7 +214,7 @@ kobe = function(obj,
     adj = -0.2,
     col = col
   )
-  # lines(B_Bmsy, F_Fmsy, type="b", cex=0.5, col=col)
+  lines(B_Bmsy, F_Fmsy, type="b", cex=0.5, col=col)
   points(
     B_Bmsy[c(1, n)],
     F_Fmsy[c(1, n)],

@@ -1,8 +1,8 @@
 library(here)
-if (getwd() != here("assessment")){
-  setwd("assessment")
-  
-}
+# if (getwd() != here("assessment")){
+#   setwd("assessment")
+#   
+# }
 library(jjmR)
 # mod0.00 <- runit(geth("0.00"),pdf=TRUE,portrait=F,est=TRUE,exec="../src/jjms")
 mod0.00 <- readJJM("h2_0.00", path = "config", input = "input")
@@ -32,4 +32,4 @@ a = get_msy_mt(old_vs_new_mods)
 
 kobe(mod0.00, engine = "ggplot")
 
-kobe(old_vs_new_mods, engine = "ggplot")
+kobe(old_vs_new_mods, engine = "lattice")
